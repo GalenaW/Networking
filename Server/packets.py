@@ -19,7 +19,12 @@ def RD_WR_packet(input, filename):
     zero = (0).to_bytes(2, byteorder = "big")
     
     return opcode+filename+zero+mode+zero
-# TO DO: Implement error package
 
-def ERROR_packet():
-    print("write something")
+def ERROR_packet(code, msg):
+    opcode = (5).to_bytes(2, byteorder = "big")
+    errcode = (err).to_bytes(2, byteorder = "big")
+    errmsg = msg.encode()
+    zero = (0).to_bytes(2, byteorder = "big")
+    
+    return opcode+errcode+errmsg+zero
+    

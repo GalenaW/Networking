@@ -1,4 +1,3 @@
-
 def ACK_packet(blc_number):
     op_code = (4).to_bytes(2, byteorder="big")
     
@@ -22,3 +21,11 @@ def RD_WR_packet(input, filename):
     
     return opcode+filename+zero+mode+zero
 
+def ERROR_packet(code, msg):
+    opcode = (5).to_bytes(2, byteorder = "big")
+    errcode = (err).to_bytes(2, byteorder = "big")
+    errmsg = msg.encode()
+    zero = (0).to_bytes(2, byteorder = "big")
+    
+    return opcode+errcode+errmsg+zero
+    
