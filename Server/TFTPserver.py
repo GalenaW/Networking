@@ -1,3 +1,10 @@
+#****************************************************************
+#
+#
+#
+#
+#
+#****************************************************************
 from socket import *
 import packets
 import os
@@ -9,7 +16,7 @@ def extract_request(pac):
     return int.from_bytes(pac[0:2], byteorder = "big"), pac[2:end_pos]
     
 def TCPServer():
-    serverPort = 12345
+    serverPort = 12002
     serverSocket =  socket(AF_INET, SOCK_STREAM)
     serverSocket.bind(('', serverPort))
     serverSocket.listen(1)
@@ -30,14 +37,25 @@ def TCPServer():
             # send data package with block # 1
             file_s = os.path.getsize(filename)
             end_file = round(file_s/512)
+            
             if end_file == 0:
                 end_file=1
-           
-            for i in range (0, end_file):
+                
+            data = file.read(512)
+            pack = packets.DATA_packet(data, 1)
+            prevdata = data
+            connectionSocket.send(pack)
+            
+            for i in range (2, end_file):
                 data = file.read(512)
+                ack = connectionSocket.recv(4)
                 pack = packets.DATA_packet(data, i)
-                connectionSocket.send(pack)
-               
+                if ack[2:] == i-1:
+                    connectionSocket.send(pack)
+                else:
+                    connectionSocket.send(prevdata)
+                
+                    
             file.close()
             # TO DO:
             # wait for ACK
@@ -55,7 +73,8 @@ def TCPServer():
                 pack = connectionSocket.recv(516)
                 if not pack:
                     break
-                #ack_pack=packets.ACK_packet(pack[2:4])
+                ack_pack=packets.ACK_packet(pack[2:4])
+                connectionSocket.send(ack_pack)
                 file.write(pack[4:])
             
             file.close()    

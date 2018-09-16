@@ -18,7 +18,7 @@ filename = args.filename
 
 
 def client():    
-    serverPort = 12345
+    serverPort = 12002
     serverName = "127.0.0.1"
     clientSocket = socket(AF_INET, SOCK_STREAM)
     clientSocket.connect((serverName, serverPort))
@@ -37,6 +37,8 @@ def client():
         
         while True:
             pack = clientSocket.recv(516)
+            ack_pack=packets.ACK_packet(pack[2:4])
+            clientSocket.send(ack_pack)
             if not pack:
                 break
             file.write(pack[4:])
@@ -53,7 +55,6 @@ def client():
         wrt_packet = packets.RD_WR_packet(request, filename)
         clientSocket.send(wrt_packet)
         
-        ack = clientSocket.recv(4)
         #read data from file
         file = open(filename, 'rb')
         
@@ -63,12 +64,21 @@ def client():
         
         if end_file == 0:
             end_file= 1
+        
+        ack = clientSocket.recv(4)
+        
+        if ack:
+            for i in range (1, end_file):
+                data = file.read(512)
+                pack = packets.DATA_packet(data, i)
+                prevdata = data
+                if ack[2:] == i:
+                    clientSocket.send(pack)
+                else:
+                    clientSocket.send(prevdata)
+                ack = clientSocket.recv(4)
             
-        for i in range (0, end_file):
-            data = file.read(512)
-            pack = packets.DATA_packet(data, i)
-            clientSocket.send(pack)
-
+            
         file.close()
 
   
