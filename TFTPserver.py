@@ -3,7 +3,7 @@
 # Author: Galena Wilson
 # Purpose: This is the server code for a TFTP client/server application
 # using TCP
-# 
+# Arguments: It takes optional argument for the server port, the default is set to # 50000
 #****************************************************************
 
 from socket import *
@@ -15,49 +15,40 @@ import argparse
 
 
 def main():
-    parser = argparse.ArgumentParser(description = 'Server Port')
-    parser.add_argument('server_port', type = int, help = 'server port')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', type = int, default = 50000, help = 'Server port')
     args = parser.parse_args()
     
-    
-    serverPort = args.server_port
+    serverPort = args.p
     serverSocket = socket(AF_INET, SOCK_STREAM)
     serverSocket.bind(('', serverPort))
     serverSocket.listen(1)
     
-    print('The server is ready to receive.')
-    
-    help = Utility()
-    
+    print('The server is ready to receive on port {0}'.format(args.p))
+        
     while True:
         connectionSocket, addr = serverSocket.accept()
         
         req = connectionSocket.recv(1024)
-        source = help.to_int(req[0:2])
-        dest = help.to_int(req[2:4])
-        packet = Packets(source, dest, connectionSocket)
+        packet = Packets(connectionSocket)
     
-        opcode, filename = help.extract_request(req)
+        opcode, filename = packet.extract_request(req)
         # if a RRQ is initiated:
         if opcode == 1:
-            if os.path.isfile(filename):
-                packet.sendData(filename)
+            if os.path.isfile(filename):           # If the file exists: send the data
+                packet.sendData(filename) 
             else: 
-                err_packet = packet.ERROR_packet(1, "File not found.")
-                dgram = packet.makeDatagram(err_packet)
-                connectionSocket.send(dgram)
+                err_packet = packet.ERROR_packet(1, "File not found.") # Otherwise : send 
+                connectionSocket.send(err_packet)
     
         # if a WRQ request is initiated
         if opcode == 2:
             # send acknowledgement with block number 0
-            
             ack_pack = packet.ACK_packet((0).to_bytes(2, byteorder="big"))
-            dgram = packet.makeDatagram(ack_pack)
-            connectionSocket.send(dgram)
+            connectionSocket.send(ack_pack)
             
             packet.writeData(filename)
-            
-        connectionSocket.close()
-
+        
+    connectionSocket.close()
 
 main()
